@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!--<link rel="stylesheet" href="style.css" />-->
+    <script data-require="jquery@*" data-semver="3.1.1" src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <style>
+        #container {
+            border: 1px solid brown;
+            width: 50%;
+        }
+        H1 {float: left;}
+        /*.button{*/
+            /*!*background-color:#55A;*!*/
+            /*border: 1px solid black;*/
+            /*width: 100px;*/
+            /*float: right;*/
+            /*font-size: 1.5em;*/
+            /*color: white;*/
+            /*text-align: center;*/
+        /*}*/
+
+        #receiptList {
+            border: 1px solid green;
+            clear: both;
+        }
+        .receipt {
+            background-color: #eee;
+            margin-bottom: 5px;
+        }
+
+        #add-receipt {
+            background-color: orange;
+            text-align: center;
+            line-height: 30px;
+            display: inline-block;
+            width: 100px;
+            height: 30px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-left: 140px;
+            margin-top: 10px;
+        }
+
+        #cancel-receipt {
+            display: inline-block;
+            background-color: red;
+            width: 100px;
+            height: 30px;
+            border-radius: 10px;
+            font-size: 1.5em;
+            color: white;
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+
+        #save-receipt {
+            display: inline-block;
+            background-color: green;
+            border-radius: 10px;
+            width: 100px;
+            height: 30px;
+            font-size: 1.5em;
+            color: white;
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+
+        #receipt-form{
+            border: 1px solid black;
+            width: 400px;
+            /*position: relative;*/
+            display: none;
+            margin-top: 60px;
+        }
+
+        .add-tag {
+            border: 1px solid grey;
+            background-color: lightsalmon;
+            border-radius: 20px;
+            width: 80px;
+        }
+
+        .receipt span, .receiptList-header span {
+            display: inline-block;
+            text-align: center;
+            width: 100px;
+        }
+
+    </style>
+    <script>
+        // This is the idiomatic way to ensure that JQuery does not
+        // execute until the page has loaded
+
+        const api = ""; // <- do not need a root api URL if this page is served directly by the API
+        const receiptsEndpoint = api + "/receipts";
+        const tagsEndPoint = api + "/tags";
+
+        $(function(){
+
+
+            getAllReceipts();
+
+
+            $('#add-receipt').on('click', function () {
+                $('#receipt-form').show();
+            });
+
+            $('#cancel-receipt').on('click',function () {
+                $('#receipt-form').hide();
+            });
+
+
+            $('#save-receipt').on('click',function () {
+                var data = {
+                    merchant: $('#merchant').val(),
+                    amount: $('#amount').val()
+                };
+
+                $.ajax({
+                    url: receiptsEndpoint,
+                    dataType: 'json',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success:function () {
+                         $.getJSON(receiptsEndpoint, function(receipts){
+                         	var newReceipt = receipts[receipts.length-1];
+                             $(`<div class="receipt">
+                                 <span class="created">${newReceipt.created}</span>
+                                 <span class="merchant"> ${newReceipt.merchantName} </span>
+                                 <span class="amount"> ${newReceipt.amount} </span>
+                                 <div class = "tags" id = ${newReceipt.id}>
+                                 	<input type = "button" class = "add-tag" name=${newReceipt.id} onclick="addTag(this)" value="Add+">
+                                 </div>`)
+                                 .appendTo($("#receiptList"));
+                         });
+                         $('#merchant').text('');
+                         $('#amount').text('');
+                         $('#receipt-form').hide();
+//                        getAllReceipts();
+                    },
+                    error: function() {
+               		}
+                });
+            });
+
+        });
+
+        function getAllReceipts(){
+            $("#receiptList").empty();
+            $(`<div class="receiptList-header">
+                <span class="column">Time</span>
+                <span class="column">Merchant</span>
+                <span>$</span>
+                <span>Tags</span>
+                </div>`).appendTo($("#receiptList"));
+            $.getJSON(receiptsEndpoint, function(receipts){
+                for(var i=0; i < receipts.length; i++) {
+                    var receipt = receipts[i];
+                    $(`<div class="receipt">
+                        <span class="created">${receipt.created}</span>
+                        <span class="merchant">${receipt.merchantName}</span>
+                        <span class="amount">${receipt.amount}</span>
+                        <div class = "tags" id = ${receipt.id} name=${receipt.id}>
+                        	<input type = "button" class = "add-tag" name=${receipt.id} onclick="addTag(this)" value="Add+">
+                        </div>`)
+                        .appendTo($("#receiptList"));
+                    //for each receipt, append the tags
+                    if (receipt.tags) {
+                        for (var j=0;j<receipt.tags.length; j++){
+                            var tag = receipt.tags[j];
+                            var button = document.createElement('a');
+                            button.className = "tagValue";
+                            button.name = String(receipt.id);
+                            button.text = tag;
+                            button.addEventListener('click', function(){
+                                removeTag(tag, button.name);
+                                button.remove();
+                            });
+                            document.getElementById(receipt.id).appendChild(button);
+                        }
+                    }
+                }
+            });
+        }
+
+        function addTag(button){
+            var tagName = document.createElement('input');
+            tagName.type = "text";
+            tagName.name = button.name;
+            tagName.className = "tag_input";
+            tagName.addEventListener('keypress', function(event){
+                if (event.keyCode == 13) {    //returnKey
+                    toggleTag(tagName,button)
+                }
+            });
+            document.getElementById(button.name).appendChild(tagName);
+
+
+        }
+
+        function removeTag(tag, receiptId){
+            $.ajax({
+                url: tagsEndPoint + '/' + tag,
+                dataType: 'json',
+                type: 'PUT',
+                data: JSON.stringify(parseInt(receiptId)),
+                contentType: 'application/json;charset=utf-8',
+                success: function () {
+                    //alert()
+                }
+            })
+
+        };
+
+        function toggleTag(tagName,button){
+        	tag = tagName.value
+            receipt = tagName.name
+            $.ajax({
+                url: tagsEndPoint + '/' + tag,
+                dataType: 'json',
+                type: 'PUT',
+                data: JSON.stringify(parseInt(receipt)),
+                contentType: 'application/json;charset=utf-8',
+                success:function () {
+                    var tagHtml = '<div class="tagValue" onclick="removeTagHtml(this, receipt)">' + tag + '</div>';
+                    $(tagHtml).appendTo(document.getElementById(button.name));
+                    document.getElementById(button.name).removeChild(tagName);
+                }
+            });
+        }
+
+        function removeTagHtml(input, id) {
+            tag = input.textContent
+            removeTag(tag, id);
+            input.remove();
+        }
+
+
+    </script>
+</head>
+
+<body>
+<DIV id="container">
+    <h1>My receipts</h1>
+    <div id="add-receipt" class="button">+</div>
+    <div id="receipt-form">
+        <p><input id="merchant" type="text" placeholder="merchant"></p>
+        <p><input id="amount" type="number" placeholder="amount"></p>
+        <div class="button">
+            <div id="cancel-receipt">cancel</div>
+            <div id="save-receipt">save</div>
+        </div>
+    </div>
+    <div id="receiptList">
+    </div>
+</DIV>
+</body>
+
+</html>

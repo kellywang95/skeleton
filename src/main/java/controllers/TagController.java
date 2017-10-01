@@ -3,6 +3,7 @@ package controllers;
 import api.ReceiptResponse;
 import dao.TagDao;
 import generated.tables.records.ReceiptsRecord;
+import generated.tables.records.TagsRecord;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -11,6 +12,7 @@ import java.util.stream.Collectors;
 
 @Path("/tags")
 @Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
 public class TagController {
     final TagDao tags;
 
@@ -21,11 +23,23 @@ public class TagController {
     @PUT
     @Path("/{tag}")
     public void toggleTag(@PathParam("tag") String tagLabel, int receiptId) {
+
+//        if (!ifexist) {
         if (tags.isReceiptTagged(tagLabel, receiptId)) {
-            tags.remove(tagLabel, receiptId);
+//            boolean ifexist = false;
+//            List<String> tagsReceipt = tags.getTagsForReceipt(receiptId);
+//            for(String str: tagsReceipt) {
+//                if(str.trim().contains(tagLabel)) {
+//                    ifexist = true;
+//                }
+//            }
+//            if (ifexist) {
+                tags.remove(tagLabel, receiptId);
         } else {
             tags.insert(tagLabel, receiptId);
         }
+//        }
+
     }
 
     @GET
