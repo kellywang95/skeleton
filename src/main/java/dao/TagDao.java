@@ -45,4 +45,9 @@ public class TagDao {
                 .stream().map(x -> x.getReceiptId()).collect(Collectors.toList());
         return dsl.selectFrom(RECEIPTS).where(RECEIPTS.ID.in(receiptIds)).fetch();
     }
+
+    public List<String> getTagsForReceipt(int receiptId) {
+        return dsl.selectFrom(TAGS).where(TAGS.RECEIPT_ID.eq(receiptId)).fetch()
+                .stream().map(x->x.getLabel()).collect(Collectors.toList());
+    }
 }

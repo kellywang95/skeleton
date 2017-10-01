@@ -3,6 +3,7 @@ package controllers;
 import api.ReceiptResponse;
 import dao.TagDao;
 import generated.tables.records.ReceiptsRecord;
+import generated.tables.records.TagsRecord;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -11,6 +12,7 @@ import java.util.stream.Collectors;
 
 @Path("/tags")
 @Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
 public class TagController {
     final TagDao tags;
 

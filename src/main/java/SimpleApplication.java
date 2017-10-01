@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 3017e137dccc154dfe596317e433c99a458472e5
 import controllers.*;
 import dao.JooqConfig;
 import dao.ReceiptDao;
@@ -30,9 +33,11 @@ public class SimpleApplication extends Application<Configuration> {
 
         // Register all Controllers below.  Don't forget
         // you need class and method @Path annotations!
+        env.jersey().register(new HelloWorldController());
         env.jersey().register(new StaticHtmlController());
-        env.jersey().register(new ReceiptController(receiptDao));
         env.jersey().register(new ReceiptImageController());
+
+        env.jersey().register(new ReceiptController(receiptDao,tagDao));
         env.jersey().register(new TagController(tagDao));
 
         SimpleApplication.enableSessionSupport(env);
