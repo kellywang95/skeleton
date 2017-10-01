@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 3017e137dccc154dfe596317e433c99a458472e5
 import controllers.*;
 import dao.JooqConfig;
 import dao.ReceiptDao;
