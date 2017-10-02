@@ -4,8 +4,7 @@ import api.ReceiptSuggestionResponse;
 import com.google.cloud.vision.v1.*;
 import com.google.protobuf.ByteString;
 import java.math.BigDecimal;
-import java.util.Base64;
-import java.util.Collections;
+import java.util.*;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -51,12 +50,52 @@ public class ReceiptImageController {
             // Your Algo Here!!
             // Sort text annotations by bounding polygon.  Top-most non-decimal text is the merchant
             // bottom-most decimal text is the total amount
-            for (EntityAnnotation annotation : res.getTextAnnotationsList()) {
-                out.printf("Position : %s\n", annotation.getBoundingPoly());
-                out.printf("Text: %s\n", annotation.getDescription());
+            TreeMap<Integer,List<String>> textMap =  new TreeMap<Integer,List<String>>();
+            for(int i = 1; i < res.getTextAnnotationsList().size(); i++) {
+                EntityAnnotation annotation = res.getTextAnnotationsList().get(i);
+                Integer yVertex =annotation.getBoundingPoly().getVertices(0).getY();
+                if (textMap.containsKey(yVertex)) {
+                    List<String> currText = textMap.get(yVertex);
+                    currText.add(annotation.getDescription());
+                    textMap.put(annotation.getBoundingPoly().getVertices(0).getY(),currText);
+                }else {
+                    List<String> currText = new ArrayList<String>();
+                    currText.add(annotation.getDescription());
+                    textMap.put(annotation.getBoundingPoly().getVertices(0).getY(), currText);
+                }
             }
 
-            //TextAnnotation fullTextAnnotation = res.getFullTextAnnotation();
+            for(Map.Entry<Integer,List<String>> entry : textMap.entrySet()) {
+                List<String> value = entry.getValue();
+                for (String t : value){
+                    if(!t.matches(".*\\d.*")){
+                        merchantName = t;
+                        break;
+                    }
+                }
+                if (merchantName != null) { break;}
+            }
+
+            NavigableSet<Integer> reverseVertices = textMap.descendingKeySet();
+            final String regExp = "[0-9]+([,.][0-9]{1,2})?";
+            for (Integer ind: reverseVertices){
+                List<String> value = textMap.get(ind);
+                for (String t : value){
+                    if( t.charAt(0)=='$'){
+                        String tmpt = t.substring(1);
+                        if (tmpt.matches(regExp)){
+                            amount = new BigDecimal(tmpt);
+                            break;
+                        }
+                    }
+                    if (t.matches(regExp)){
+                        amount = new BigDecimal(t);
+                        break;
+                    }
+                }
+                if (amount != null) { break;}
+            }
+
             return new ReceiptSuggestionResponse(merchantName, amount);
         }
     }

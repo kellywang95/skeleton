@@ -32,11 +32,13 @@
 
         #vidwrap {
             margin: 20px 0;
+            display: none;
         }
 
-        #start, #snapshot {
+        #start, #snapshot, #take-pic-cancel {
             height: 3em;
         }
+
         .receipt {
             background-color: #eee;
             margin-bottom: 5px;
@@ -88,8 +90,16 @@
             width: 400px;
             /*position: relative;*/
             display: none;
-            margin-top: 60px;
+            margin-top: 50px;
         }
+
+        /*#receiptList{*/
+            /*border: 1px solid black;*/
+            /*width: 600px;*/
+            /*!*position: relative;*!*/
+            /*display: none;*/
+            /*margin-top: auto;*/
+        /*}*/
 
         .add-tag {
             border: 1px solid grey;
@@ -117,6 +127,7 @@
         }
 
         function startVideo() {
+            $("#vidwrap").show();
             navigator.mediaDevices.getUserMedia({video: {facingMode: {exact: "environment"}}})
                 .then(attachMediaStream)
                 .catch(error => {
@@ -127,6 +138,13 @@
                         })
                 })
         }
+
+        function cancelVideo() {
+            track.stop();
+            $("#vidwrap").hide();
+        }
+
+
 
         function takeSnapshot() {
             // create a CANVAS element that is same size as the image
@@ -143,15 +161,24 @@
                     type: "POST",
                     data: base64EncodedImageData,
                     contentType: "text/plain",
-                    success: function() {},
+                    success: function(data) {
+                        //console.log(data);
+                        $('#receipt-form').show();
+                        $("#merchant").val(data.merchantName);
+                        $("#amount").val(data.amount);
+                    },
                })
-                .then(response => {
-                    $('video').after(`<div>got response: <pre>${JSON.stringify(response)}</pre></div>`);
-                })
-                .always(() => console.log('request complete'));
+            cancelVideo();
+//                .then(response => {
+//                    $('video').after(`<div>got response: <pre>${JSON.stringify(response)}</pre></div>`);
+//
+//
+//                })
+//                .always(() => console.log('request complete'));
 
                 // For debugging, you can uncomment this to see the frame that was captured
-                // $('BODY').append(canvas);
+//                 $('BODY').append(canvas);
+
             });
 
         }
@@ -165,6 +192,8 @@
             $('#start').on('click', startVideo);
             $('video').on('play', () => $('#snapshot').prop('disabled', false));
             $('#snapshot').on('click', takeSnapshot);
+            $('video').on('play', () => $('#take-pic-cancel').prop('disabled', false));
+            $('#take-pic-cancel').on('click',cancelVideo);
 
 
             getAllReceipts();
@@ -313,11 +342,12 @@
     <h1>My receipts</h1>
     <div id="add-receipt" class="button">+</div>
     <button id="start">Start Video</button>
-    <button id="snapshot" disabled="true">Take a Snapshot!</button>
+    <button id="snapshot" disabled="true">Open camera</button>
+    <button id="take-pic-cancel" disabled="true">Cancel video</button>
     <br>
     <div id="vidwrap">
         <video autoplay></video>
-
+    </div>
     <div id="receipt-form">
         <p><input id="merchant" type="text" placeholder="merchant"></p>
         <p><input id="amount" type="number" placeholder="amount"></p>
@@ -328,6 +358,7 @@
     </div>
     <div id="receiptList">
     </div>
+</DIV>
 </body>
 
 </html>
